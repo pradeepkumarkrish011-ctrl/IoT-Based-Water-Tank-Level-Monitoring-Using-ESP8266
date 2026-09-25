@@ -1,0 +1,2 @@
+# IoT-Based-Water-Tank-Level-Monitoring-Using-ESP8266
+Developed a real-time water level monitoring system using an ESP8266 microcontroller, HC-SR04 ultrasonic sensor, and Blynk IoT platform. The system measures the water level in a tank and displays real-time data on a smartphone dashboard. It also provides alerts when the water level becomes low, enable remote monitoring &amp; efficient water management.
