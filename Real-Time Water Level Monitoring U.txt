@@ -1,0 +1,96 @@
+// Real-Time Water Level Monitoring Using ESP8266 
+// Blynk Setup
+#define BLYNK_TEMPLATE_ID "TMPL3rsh8q2df"
+#define BLYNK_TEMPLATE_NAME "Water Level Monitor"
+#define BLYNK_AUTH_TOKEN "Ksm0Y17NDGREYlskC9MZ-jvgX0sVSzzU"
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+// WiFi credentials
+char ssid[] = "Samsung Galaxy A35";
+char pass[] = "pradeepkumarkrish@11";
+
+// Ultrasonic Sensor Pins
+#define TRIG_PIN D5
+#define ECHO_PIN D6
+
+// Blynk Virtual Pins
+#define VIRTUAL_WATER_LEVEL V1   // Gauge
+#define VIRTUAL_LABEL       V2   // Label
+
+BlynkTimer timer;
+
+void sendSensor() {
+  long duration, distance;
+
+  // Trigger ultrasonic pulse
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;  // in cm
+
+  // Adjust according to your tank height (example: 0cm = full, 20cm = empty)
+  int waterLevel = map(distance, 0, 20, 100, 0);
+  waterLevel = constrain(waterLevel, 0, 100);
+
+  // Send value to gauge
+  Blynk.virtualWrite(VIRTUAL_WATER_LEVEL, waterLevel);
+
+  String status;
+
+  // Determine status, color, and notifications
+  if (waterLevel <= 10) {
+    status = "🔴 TANK EMPTY!";
+    Blynk.virtualWrite(VIRTUAL_LABEL, status);
+    Blynk.setProperty(VIRTUAL_LABEL, "color", "#FF0000");       // Red label
+    Blynk.setProperty(VIRTUAL_WATER_LEVEL, "color", "#FF0000"); // Red gauge
+    Blynk.logEvent("tank_empty"); // Send Blynk notification
+  }
+  else if (waterLevel > 10 && waterLevel <= 50) {
+    status = "🟠 LOW LEVEL";
+    Blynk.virtualWrite(VIRTUAL_LABEL, status);
+    Blynk.setProperty(VIRTUAL_LABEL, "color", "#FFA500");       // Orange label
+    Blynk.setProperty(VIRTUAL_WATER_LEVEL, "color", "#FFA500"); // Orange gauge
+  }
+  else if (waterLevel > 50 && waterLevel < 90) {
+    status = "🟢 MEDIUM LEVEL";
+    Blynk.virtualWrite(VIRTUAL_LABEL, status);
+    Blynk.setProperty(VIRTUAL_LABEL, "color", "#00FF00");       // Green label
+    Blynk.setProperty(VIRTUAL_WATER_LEVEL, "color", "#00FF00"); // Green gauge
+  }
+  else if (waterLevel >= 90) {
+    status = "🔵 TANK FULL!";
+    Blynk.virtualWrite(VIRTUAL_LABEL, status);
+    Blynk.setProperty(VIRTUAL_LABEL, "color", "#0000FF");       // Blue label
+    Blynk.setProperty(VIRTUAL_WATER_LEVEL, "color", "#0000FF"); // Blue gauge
+    Blynk.logEvent("tank_full"); // Send Blynk notification
+  }
+
+  // Debugging in Serial Monitor
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.print(" cm  |  Level: ");
+  Serial.print(waterLevel);
+  Serial.print("%  |  Status: ");
+  Serial.println(status);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  timer.setInterval(3000L, sendSensor); // Update every 3 seconds
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
+
